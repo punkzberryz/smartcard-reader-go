@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Example-SMC</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+  </head>
+
+  <body>
+    <h1>SMC</h1>
+    <div>
+      <p id="name"></p>
+      <p id="address"></p>
+      <img src="" alt="image" />
+    </div>
+    <h2>Socket.io</h2>
+    <p id="data"></p>
+    <h2>Websocket</h2>
+    <p id="data-ws"></p>
+    <script>
+      var socket = io.connect(window.location.origin);
+      const dataEl = document.getElementById('data');
+      const nameEl = document.getElementById('name');
+      const addrEl = document.getElementById('address');
+      const imgEl = document.querySelector('img');
+      socket.on('connect', function () {
+        dataEl.innerHTML = '<b>Connected to socket.io server</b>';
+        nameEl.innerHTML = '';
+        addrEl.innerHTML = '';
+        imgEl.setAttribute('src', `data:image/png;base64, `);
+      });
+      socket.on('disconnect', function () {
+        dataEl.innerHTML = '<b>Disconnected to socket.io server</b>';
+        nameEl.innerHTML = '';
+        addrEl.innerHTML = '';
+        imgEl.setAttribute('src', `data:image/png;base64, `);
+      });
+      socket.on('smc-data', function (data) {
+        console.log(data);
+        dataEl.innerHTML = JSON.stringify(data, null, '\t');
+        nameEl.innerHTML = data.personal.name.full_name;
+        addrEl.innerHTML = data.personal.address.address;
+        imgEl.setAttribute(
+          'src',
+          `data:image/png;base64, ${data.personal.base64_img}`
+        );
+      });
+      socket.on('smc-error', function (data) {
+        console.log(data);
+        dataEl.innerHTML = JSON.stringify(data, null, '\t');
+        nameEl.innerHTML = '';
+        addrEl.innerHTML = '';
+        imgEl.setAttribute('src', `data:image/png;base64, `);
+      });
+      socket.on('smc-removed', function (data) {
+        console.log(data);
+        dataEl.innerHTML = JSON.stringify(data, null, '\t');
+        nameEl.innerHTML = '';
+        addrEl.innerHTML = '';
+        imgEl.setAttribute('src', `data:image/png;base64, `);
+      });
+      socket.on('smc-inserted', function (data) {
+        console.log(data);
+        dataEl.innerHTML = JSON.stringify(data, null, '\t');
+        nameEl.innerHTML = '';
+        addrEl.innerHTML = '';
+        imgEl.setAttribute('src', `data:image/png;base64, `);
+      });
+
+      // Connection to Websocker Server...
+      if (window['WebSocket']) {
+        conn = new WebSocket('ws://' + document.location.host + '/ws');
+        console.log(document.location.host);
+        conn.onopen = function (evt) {
+          var item = document.getElementById('data-ws');
+          item.innerHTML = '<b>Connected to WebSocket server</b>';
+        };
+        conn.onclose = function (evt) {
+          var item = document.getElementById('data-ws');
+          item.innerHTML = '<b>Disconnected to WebSocket server</b>';
+        };
+        conn.onmessage = function (evt) {
+          var messages = evt.data.split('\n');
+          console.log(messages);
+          for (var i = 0; i < messages.length; i++) {
+            var item = document.getElementById('data-ws');
+            item.innerText = messages[i];
+          }
+        };
+        conn.onerror = function (err) {
+          console.log('Socket Error: ', err);
+        };
+      } else {
+        var item = document.getElementById('data-ws');
+        item.innerHTML = '<b>Your browser does not support WebSockets.</b>';
+        appendLog(item);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+/bin
+.env
+app.env
+*.log
+env.txt
