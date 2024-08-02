@@ -26,10 +26,14 @@ func NewSmartCard() *SmartCard {
 
 type smcError string
 
-const smcErrNoSmartCardReader smcError = "scard: error(8010002e): Cannot find a smart card reader."
+const (
+	smcErrNoSmartCardReader     smcError = "scard: error(8010002e): Cannot find a smart card reader."
+	smcErrIncorrectCardInserted smcError = "scard: error(80100066): The smart card is not responding to a reset."
+)
 
 var (
-	ErrNoSmartCardReader = fmt.Errorf("no card reader")
+	ErrNoSmartCardReader     = fmt.Errorf("no card reader")
+	ErrIncorrectCardInserted = fmt.Errorf("incorrect card inserted")
 )
 
 func (s *SmartCard) ListReaders() ([]string, error) {
@@ -75,7 +79,6 @@ func (s *SmartCard) Read(readerName *string, opts *Options) (*model.Data, error)
 	// Establish a context
 	ctx, err := util.EstablishContext()
 	if err != nil {
-
 		return nil, err
 	}
 	defer util.ReleaseContext(ctx)
@@ -93,6 +96,9 @@ func (s *SmartCard) Read(readerName *string, opts *Options) (*model.Data, error)
 	defer util.DisconnectCard(card)
 
 	if err != nil {
+		if err.Error() == string(smcErrIncorrectCardInserted) {
+			return nil, ErrIncorrectCardInserted
+		}
 		return nil, err
 	}
 
