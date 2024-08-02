@@ -4,7 +4,7 @@ Go application read personal and nhso data from thai id card, inspired by [go-th
 
 ## How to build
 
-- Required version [Go](https://go.dev/dl/) version 1.18+
+- Required version [Go](https://go.dev/dl/) version 2.25+
 - Clone this repository
 - Download all depencies with `go mod download`
 
