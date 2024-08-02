@@ -20,7 +20,8 @@ type Server struct {
 
 func (s *Server) RunServer() error {
 	mux := http.NewServeMux()
-	mux.Handle("/health", http.HandlerFunc(s.handleHome))
+	mux.Handle("/health", CORS(http.HandlerFunc(s.handleHome)))
+	//auth has CORS included
 	mux.Handle("/read", s.auth(http.HandlerFunc(s.handleRead)))
 
 	return http.ListenAndServe(":"+s.ServerConfig.Port, mux)

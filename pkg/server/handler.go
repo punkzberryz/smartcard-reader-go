@@ -16,23 +16,24 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return CORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		//check api key
 		authHeader := r.Header.Get("authorization")
 		authFields := strings.Fields(authHeader)
 		if len(authFields) != 2 || authFields[0] != "Bearer" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			handleError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		apiKey := authFields[1]
 
 		if apiKey != s.ServerConfig.ApiKey {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			handleError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		//Proceed to next middleware or handler
 		next.ServeHTTP(w, r)
-	})
+	}))
+
 }
 
 type readResponse struct {
@@ -84,10 +85,11 @@ func (s *Server) handleRead(w http.ResponseWriter, r *http.Request) {
 		{
 			if resp.Error != nil {
 				if resp.Error == smc.ErrNoSmartCardReader {
-					http.Error(w, "card reader not found", http.StatusInternalServerError)
+					handleError(w, http.StatusInternalServerError, "card reader not found")
 					return
+
 				}
-				http.Error(w, resp.Error.Error(), http.StatusInternalServerError)
+				handleError(w, http.StatusInternalServerError, resp.Error.Error())
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -96,6 +98,28 @@ func (s *Server) handleRead(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case <-ctx.Done():
-		http.Error(w, "request timed out", http.StatusRequestTimeout)
+		handleError(w, http.StatusRequestTimeout, "request timed out")
 	}
+}
+
+func CORS(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Access-Control-Allow-Credentials", "true")
+		w.Header().Add("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+		if r.Method == "OPTIONS" {
+			http.Error(w, "No Content", http.StatusNoContent)
+			return
+		}
+
+		next(w, r)
+	}
+}
+
+func handleError(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	w.Write([]byte(`{"error": "` + message + `"}`))
 }
